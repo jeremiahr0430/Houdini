@@ -1,5 +1,3 @@
-#generateNode.py
-
 import hou
 from cachemanage import findMoveCache
 reload(findMoveCache)
@@ -76,6 +74,8 @@ class GenerateNode:
                 fmc = findMoveCache.FindMoveCache()
                 sceneFileLocation = fmc.sceneFileLocation()
                 # Variable from external class
+                if sceneFileLocation[-1] == '/':
+                    sceneFileLocation = sceneFileLocation[:-1]
                 parm = "{}/geo/$OS/v`ch('{}')`/$OS.$F4.bgeo.sc".format(sceneFileLocation,addedParm)
                 node.parm('file').set(parm)
 
