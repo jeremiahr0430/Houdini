@@ -1,26 +1,36 @@
+
 import hou
 
 def run():
     nodes = hou.selectedNodes()
     nodes = list(nodes)
-    print '\n list before sorted is \n'
-    for node in nodes:
-        print node.name()
-        
-    def byPy(x,y):
-        pos1= x.position()[1]
-        pos2= y.position()[1]
-        if pos1-pos2<0:
-            return 1
-        else:
-            return -1
+    
+    # Check if selected nodes are in different object, or context
+    inDifferentObject = False
+    for index,node in enumerate(nodes):
+        if index !=0:
+            if node.parent() == nodes[index-1]:
+                inDifferentObject = True
 
+    if inDifferentObject == True:
+        print '\n list before sorted is \n'
+        for node in nodes:
+            print node.name()
+            
+        # sort by y position
+        def byPy(x,y):
+            pos1= x.position()[1]
+            pos2= y.position()[1]
+            if pos1-pos2<0:
+                return 1
+            else:
+                return -1
 
-    nodes.sort(byPy)
+        nodes.sort(byPy)
 
-    print '\n list after sorted is \n'
-    for node in nodes:
-        print node.name()
+        print '\n list after sorted is \n'
+        for node in nodes:
+            print node.name()
 
 
 

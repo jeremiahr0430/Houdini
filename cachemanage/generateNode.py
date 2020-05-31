@@ -1,3 +1,4 @@
+
 import hou
 from cachemanage import findMoveCache
 reload(findMoveCache)
@@ -12,7 +13,7 @@ class GenerateNode:
         self.connectToDop = connectToDop
 
 # This is only works for filecache for now!!!
-    def addParm(self,node=None,parm="cache_version",value = 1):
+    def addParm(self,node=None,parm="version",value = 1):
         #This is only work for adding parm to filecache node type
         if not node:    
             node = hou.selectedNodes()[0] #select the filecache just created
@@ -20,19 +21,18 @@ class GenerateNode:
         ptg = node.parmTemplateGroup()
 
         ## If node type is file cache
-        # if self.type == "filecache": this is alternative. But this and below if statement is not needed, 
-        #as the method is only running for filecache
+        #                               if self.type == "filecache": this is alternative. But this and below if statement is not needed, 
+        #                               as the method is only running for filecache
         if 'filecache'in node.type().nameWithCategory():
             target = ptg.findIndicesForFolder("Save to File") # find Save to File folder
-            houParmTmp = hou.IntParmTemplate(parm, 'Version', 1)
-
-##############        houParmTmp.setJoinWithNext(True)
+            # Create the parm to Add
+            houParmTmp = hou.IntParmTemplate(parm, parm, 1)
             ptg.appendToFolder(target,houParmTmp)
             node.setParmTemplateGroup(ptg)
             #set default value
             node.parm(parm).set(value)
         return parm
-## For later, add arbitrary parm to arbitrary filetype 
+##                                      For later, add arbitrary parm to arbitrary filetype 
         #if ptg.findFolder("Extras") == None:
         #    parm_folder = hou.FolderParmTemplate("extras", "Extras")
         #    parm_folder.addParmTemplate(hou.IntParmTemplate("cache_version", 'Version', 1))
@@ -42,6 +42,11 @@ class GenerateNode:
         #    print "The folder 'Extras' exists!"
 
     def generateNode(self):
+        def replaceSpace(name):
+            name = name.split()
+            name = "_".join(name)
+            return name
+            
         if not self.connectNode:    
             selnode = hou.selectedNodes()[0]
         else:
@@ -51,15 +56,34 @@ class GenerateNode:
         selnodePos = selnode.position()
             # Create position for the node to be created
         position   = [selnodePos[0]-self.px,selnodePos[1]-self.py]
+        # Get the name of the node
         name = hou.ui.readInput("Enter name:", buttons=("OK", "Cancel"))
         if name[0] == 0:
-            name = name[1].split()
-            name = "_".join(name)
-            objname = name
+            # check if folder name is needed
+            folderName = None
+            if "/" in name[1]:
+                slashSplit = name[1].split('/')
+                folderName = slashSplit[0]+'/'
+                if " " in folderName:
+                    folderName = replaceSpace(folderName)
+                name = slashSplit[1] # name might still have " "(space) in it
+                if " " in name:
+                    name = replaceSpace(name)
+                    objname = name
+                else:
+                    objname = name
+            elif " " in name[1]:
+                name = replaceSpace(name)
+                objname = name
+
+            else:
+                objname = name[1]
             node =   parent.createNode(self.type,objname)
             node.setPosition(position)
             if self.connect == 1:
                 node.setInput(0,selnode)
+            # deal with output
+            #if selnode output
             if self.connectToDop:
                 secSelNode=hou.selectedNodes()[1]
                 secSelNode.setInput(1,node)
@@ -67,7 +91,6 @@ class GenerateNode:
             node.setCurrent(True,True)
             #   ONLY when created node is a filecache !!!
             if self.type == "filecache":
-                addedParm = self.addParm()
                 print 'self.type is filecache'
                 # Specify the path
                 # Used external Class
@@ -76,8 +99,17 @@ class GenerateNode:
                 # Variable from external class
                 if sceneFileLocation[-1] == '/':
                     sceneFileLocation = sceneFileLocation[:-1]
-                parm = "{}/geo/$OS/v`ch('{}')`/$OS.$F4.bgeo.sc".format(sceneFileLocation,addedParm)
+                # if there's folder name needs to be added. (This is for file cache
+                parmA = self.addParm()
+                parmB = self.addParm(None,'takes')
+                if folderName != None:
+                    parm = "{}/geo/{}$OS/v`ch('{}')`/t`ch('{}')`/$OS.$FF.bgeo.sc".format(sceneFileLocation,folderName,parmA,parmB)
+                else:
+                    parm = "{}/geo/$OS/v`ch('{}')`/t`ch('{}')`/$OS.$FF.bgeo.sc".format(sceneFileLocation,parmA,parmB)
+
                 node.parm('file').set(parm)
+                node.parm('missingframe').set(1)
+                node.parm('loadfromdisk').set(1)
 
             return node
         else:
