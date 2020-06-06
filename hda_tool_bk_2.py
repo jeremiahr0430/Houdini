@@ -72,6 +72,12 @@ class State(object):
 
         numentries = self.GetNumberOfMultiparmEntries(kwargs)
         currentvalues = self.node.parm("iID_{}".format(numentries)).evalAsInt()
+        print numentries
+#        if numentries > 1 and currentvalues <0:
+#            preNumentries = numentries-1
+#            previousValues = self.node.parm("iID_{}".format(preNumentries)).eval()
+#            self.node.parm("iID_%s" % numentries).set(max(previousValues,0))
+#        else:
         self.node.parm("iID_%s" % numentries).set(max(currentvalues+scroll,0))
 
 
@@ -112,18 +118,16 @@ class State(object):
                 self.placedobject = True
 
 # Mouse Moving
-            if reason == hou.uiEventReason.Active and control == True:
+            if reason == hou.uiEventReason.Active and control != True:
 
                 if self.placedobject == True:
-#scale = hitposition[0] - self.placedpo[0]
-#scale = 
                     pos = hou.hmath.intersectPlane(self.placedpos,self.hitnormal, origin, direction)
                     scale = hitposition.distanceTo(self.placedpos)
                     self.node.parm('fScale_%s' %numentries).set(scale)
                     print hitposition.distanceTo(self.placedpos)
 
 
-            elif reason == hou.uiEventReason.Active:
+            elif reason == hou.uiEventReason.Active and control == True:
 
                 if self.placedobject == True:
 #scale = hitposition[0] - self.placedpo[0]
@@ -136,6 +140,12 @@ class State(object):
             if reason == hou.uiEventReason.Changed:
                 self.multiparm.set(numentries+1)
                 self.placedobject = False
+
+                numentries = self.GetNumberOfMultiparmEntries(kwargs)
+                if numentries>1:
+                    preNumentries = numentries-1
+                    previousValues = self.node.parm("iID_{}".format(preNumentries)).eval()
+                    self.node.parm("iID_%s" % numentries).set(max(previousValues,0))
 
         return True
 

@@ -27,10 +27,11 @@ def run():
         #select created render object
         renderObj.setCurrent(True) 
 # Run Func Starts here !!!            
-    null_node = generateNode.GenerateNode('null')
-    null_node = null_node.generateNode()
+    null_node_class= generateNode.GenerateNode('null')
+    print 'Before create node, userInput is {}'.format(null_node_class.userInput)
+    null_node = null_node_class.generateNode()
 
-    nullName = null_node.name()
+    nullName = null_node_class.userInputString
     objMergeName = nullName
     nullName = 'OUT_to_{}'.format(nullName)
     
@@ -38,6 +39,7 @@ def run():
 
 # check if name exists   
     existList = [kid for kid in nullParent.children() if kid.name() == nullName] 
+    print 'Name clashing! the nodes are below: \n {}'.format(existList)
     if len(existList) >=1: 
         # Ask if still continue
         confirm = hou.ui.displayConfirmation('The is one object with the same name. Continue?', hou.severityType.Message, None, None,None,None, hou.confirmType.OverwriteFile)
