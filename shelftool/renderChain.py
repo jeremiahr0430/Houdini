@@ -1,4 +1,3 @@
-
 import hou
 
 def run():
@@ -9,10 +8,10 @@ def run():
     inDifferentObject = False
     for index,node in enumerate(nodes):
         if index !=0:
-            if node.parent() == nodes[index-1]:
+            if node.parent() != nodes[index-1].parent():
                 inDifferentObject = True
 
-    if inDifferentObject == True:
+    if inDifferentObject == False:
         print '\n list before sorted is \n'
         for node in nodes:
             print node.name()

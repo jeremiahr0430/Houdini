@@ -1,29 +1,90 @@
-# findMoveCache
-
 import os, shutil,distutils
 import hou 
-
-import findFileCache
-#import findCommonPath
-reload(findFileCache)
-#reload(findCommonPath)
-
-
+import json
 
 class FindMoveCache:
     
     def __init__(self,node=None):
         self.node = node
+        self.hipPath = None
+        self.jsonFile = None
+        self.pathNonExist =  "Files don't Exist"
 
     def selectNode(self):
         node = hou.selectedNodes()[0]
         return node
 
+    def savePathToJson(self):
+        cachedFilesList = []
+        cachedFileDict = {'cachedFiles':cachedFilesList}
+        objLevel = hou.node("/obj")
+        objChildren = objLevel.allSubChildren()
+        filecacheNodeCount = 0
+        for kid in objChildren:
+            if 'filecache'in kid.type().nameWithCategory() and kid.isBypassed() != True:
+                pathParm = kid.parm('file').eval()
+                temp_cachedFileName = pathParm.split('.')[0] 
+                temp_cachedFileName = temp_cachedFileName.split('/')
+                
+                cachedFileName = temp_cachedFileName[-1]
 
-#Get file path Dictionary
-#if create object merge to help track down filecache nodes
+                temp_cachedFileName.pop()
+
+                path = temp_cachedFileName
+                lastFolder = path[-1]
+                path = "/".join(path)+'/'
+                if 'geo' not in lastFolder:
+                    print lastFolder
+                    if not os.path.exists(path):
+                        path += self.pathNonExist
+                    filecacheNode = kid.path()
+                    filecacheNodeCount += 1
+                    cachedFilesList.append({'path':path, 'name':cachedFileName, 'filecacheNode':filecacheNode})
+
+        cachedFileDict['cachedFiles'] = cachedFilesList
+        new_string = json.dumps(cachedFileDict, indent=2, sort_keys=True)
+        filecache_node_count = {'Filecache Node Found': '{}'.format(filecacheNodeCount)}
+        new_line = '\n'
+        new_string_b = json.dumps(filecache_node_count, indent=2, sort_keys=True)
+
+
+        #print new_string
+
+        hipLocation = self.sceneFileLocation()
+        print hipLocation
+        file_name = '{}/cachedFileDict.json'.format(hipLocation)
+        with open(file_name,'w') as j:
+            j.write(new_string)
+#            j.write(new_line)
+#            j.write(new_string_b)
+
+        self.jsonFile = file_name
+    
+    def getPathFromJson(self):
+        hipPath = self.hipPath
+        jsonFile = self.jsonFile
+        jsonFile = '{}/cachedFileDict.json'.format(hipPath)
+        with open(jsonFile) as j:
+            data = json.load(j)
+        loadedDict = json.dumps(data, indent=2, sort_keys=True)
+        print loadedDict
+        cachedFilePathList = []
+        valueOfDict = data.get('cachedFiles')
+        for item in valueOfDict:
+            path = item.get('path')
+            if path not in cachedFilePathList and self.pathNonExist not in path:
+                path = str(path)
+                cachedFilePathList.append(path)
+        print cachedFilePathList 
+
+
+        return cachedFilePathList
+
+#        Get file path Dictionary
+#        if create object merge to help track down filecache nodes
 
 # Check if in sop level
+
     def filePathDict(self,node,createObjMerge=0):
         
         filePathDict = {} #create empty dictionary
@@ -67,24 +128,13 @@ class FindMoveCache:
         print filenodes,'\n',pathList       
         return filePathDict  
 
-# This is useless after copy paste code from original filePathDict file
-#    def filePathDict(self,node,objmerge=0):
-#
-#        filePathDict = findFileCache.filePathDict(node,objmerge)
-#
-#        #print list(filePathDict.values())
-#        return filePathDict
-#
-
-##    def pathList(self,filePathDict):
-##        return list(filePathDict.values())
-
     def sceneFileLocation(self):
   
         sceneFilePath = hou.hipFile.path()
         sceneFilePath = sceneFilePath.split('/')
         sceneFilePath = sceneFilePath[:-1]
         sceneFileLocation  = '/'.join(sceneFilePath) + '/'
+        self.hipPath = sceneFileLocation
         return sceneFileLocation
 
 
@@ -99,6 +149,7 @@ class FindMoveCache:
                 break
             targetDir = '/'.join(targetDir)
         # remove last /
+        print '\n\nThe target dir before was {}'.format(targetDir)
         if targetDir[-1] == '/':
             targetDir[:-1]
         print '\n\nThe target dir is {}'.format(targetDir)
@@ -130,15 +181,24 @@ class FindMoveCache:
                # print '\n\ntarget path section is\n\n{}'.format(thisFilePath)
                 dst = targetDir + thisFilePath 
                 print 'source is \n{}\ntarget is\n{}'.format(src,dst)
-                
+
                 try:
-                    distutils.dir_util.copy_tree(src, dst)
+                    shutil.move(src, dst)
                 except IOError as io_err:
                     os.makedirs(os.path.dirname(dst))
-                    distutils.dir_util.copy_tree(src, dst)
+                    shutil.move(src, dst)
                 except :
                     print '\n'*4
                     print "Something wrong with {}".format(src)
+                
+#                try:
+#                    distutils.dir_util.copy_tree(src, dst)
+#                except IOError as io_err:
+#                    os.makedirs(os.path.dirname(dst))
+#                    distutils.dir_util.copy_tree(src, dst)
+#                except :
+#                    print '\n'*4
+#                    print "Something wrong with {}".format(src)
 
     #def commonPath(self, node):
     #    objmerge = hou.ui.displayConfirmation("Create Object Merge?")

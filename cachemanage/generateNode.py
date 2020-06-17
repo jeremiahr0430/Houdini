@@ -1,10 +1,8 @@
 import hou
-from cachemanage import findMoveCache
-reload(findMoveCache)
 
 class GenerateNode:
 
-    def __init__(self,type='filecache',connectNode = None, connect = 1, px=0,py=1,connectToDop = False,inputName = hou.ui.readInput("Enter name:", buttons=("OK", "Cancel"))):
+    def __init__(self,type='filecache',connectNode = None, connect = 1, px=0,py=1,connectToDop = False):
         self.type = type
         self.connectNode = connectNode
         self.connect = connect
@@ -12,11 +10,16 @@ class GenerateNode:
         self.py = py
         self.connectToDop = connectToDop
 
-        self.userInput = inputName
+        self.userInput = None
 
-        self.userInputString = self.replaceSpace(inputName[1])
+        self.userInputString = None
         self.userInputFolderName = None
         self.nodeCreated = None
+
+    def getUserInput(self):
+        self.userInput = hou.ui.readInput("Enter name:", buttons=("OK", "Cancel"))
+        self.userInputString = self.replaceSpace(self.userInput[1])
+        return self.userInput
 
     def getFolderName(self,inputString):    
         # return None if there' no folder name
@@ -60,11 +63,19 @@ class GenerateNode:
             addParmForType('Main')
         return parm
 
+    def sceneFileLocation(self):
+  
+        sceneFilePath = hou.hipFile.path()
+        sceneFilePath = sceneFilePath.split('/')
+        sceneFilePath = sceneFilePath[:-1]
+        sceneFileLocation  = '/'.join(sceneFilePath) + '/'
+        self.hipPath = sceneFileLocation
+        return sceneFileLocation
+
     def adjustParmForType(self,folderName = None, createdNode = None,pathParm = 'file',cachedFileName = '$OS.$FF.bgeo.sc', secondParm = 'missingframe', thirdParm = 'loadfromdisk'):
         # Specify the path
         # Used external Class
-        fmc = findMoveCache.FindMoveCache()
-        sceneFileLocation = fmc.sceneFileLocation()
+        sceneFileLocation = self.sceneFileLocation()
         # Variable from external class
         if sceneFileLocation[-1] == '/':
             sceneFileLocation = sceneFileLocation[:-1]

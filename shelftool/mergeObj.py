@@ -29,6 +29,7 @@ def run():
 # Run Func Starts here !!!            
     null_node_class= generateNode.GenerateNode('null')
     print 'Before create node, userInput is {}'.format(null_node_class.userInput)
+    null_node_class.getUserInput()
     null_node = null_node_class.generateNode()
 
     nullName = null_node_class.userInputString
